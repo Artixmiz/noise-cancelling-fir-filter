@@ -13,9 +13,12 @@ class Filter:
         for j in range(self.ntaps):
             output += self.coefficients[j] * self.buffer[j]
 
-        return output  # Return estimated noise
+        # Return estimated noise
+        return output
 
-    def lms(self, error, mu=0.01):  # Update the coefficients of the filter
+    def lms(self, error, mu=0.000000001, a=1):  # Update the coefficients of the filter
         for j in range(self.ntaps - 1, -1, -1):
-            self.coefficients[j] += mu * error * self.buffer[j]  # Update coefficients
-            self.buffer[j] = self.buffer[j - 1]  # Update buffer
+            # Update coefficients
+            self.coefficients[j] = a * self.coefficients[j] + mu * error * self.buffer[j]
+            # Update buffer
+            self.buffer[j] = self.buffer[j - 1]

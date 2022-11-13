@@ -5,7 +5,7 @@ from scipy.io import wavfile
 # SRS1, RS1 = wavfile.read("Sound/Signal-1_2.wav")
 # SLS2, LS2 = wavfile.read("Sound/Signal-2_1.wav")
 # SRS2, RS2 = wavfile.read("Sound/Signal-2_2.wav")
-# SLS3, LS3 = wavfile.read("Sound/Signal-3_1.wav")
+SLS3, LS3 = wavfile.read("Sound/Signal-3_1.wav")
 # SRS3, RS3 = wavfile.read("Sound/Signal-3_2.wav")
 
 # Noise
@@ -29,5 +29,5 @@ SLM3, LM3 = wavfile.read("Sound/Mixed-3_1.wav")
 # SRC1, RC1 = wavfile.read("Sound/Combine-1_2.wav")
 # SLC2, LC2 = wavfile.read("Sound/Combine-2_1.wav")
 # SRC2, RC2 = wavfile.read("Sound/Combine-2_2.wav")
-# SLC3, LC3 = wavfile.read("Sound/Combine-3_1.wav")
+SLC3, LC3 = wavfile.read("Sound/Combine-3_1.wav")
 # SRC3, RC3 = wavfile.read("Sound/Combine-3_2.wav")
