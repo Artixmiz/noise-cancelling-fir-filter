@@ -3,6 +3,9 @@ import sound
 import filter
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+
+st = time.time()
 
 # Configuration
 INPUT_FILE = sound.LM3
@@ -15,22 +18,19 @@ NTAP = 21
 f = filter.Filter(np.zeros(NTAP))
 y = np.empty(len(INPUT_FILE))
 
-for i in range(0, len(INPUT_FILE)):
-    ref_noise = KNOWN_NOISE[i]  # Reference noise
-    est_noise = f.filter(ref_noise)  # Filter Operation ( Send reference noise to filter )
-    error_signal = INPUT_FILE[i] - est_noise  # Noisy signal - Output of filter
-    f.lms(error_signal, LEARNING_RATE, WEIGHT_RATE)  # Update filter coefficients ( weight )
-
-    y[i] = error_signal  # Output signal
+for i in range(0, len(INPUT_FILE), 1):
+    y[i] = INPUT_FILE[i] - f.filter(KNOWN_NOISE[i])
+    f.lms(y[i], LEARNING_RATE, WEIGHT_RATE)
 
 print(f.coefficients[-5])
 print(f.coefficients[-4])
 print(f.coefficients[-3])
 print(f.coefficients[-2])
 print(f.coefficients[-1])
+print("=====================================")
 
 length = y.shape[0] / 44100
-time = np.linspace(0., length, y.shape[0])
+x = np.linspace(0., length, y.shape[0])
 
 # fig, axs = plt.subplots(2, 2)
 # axs[0, 0].plot(time, sound.LS3)
@@ -50,13 +50,17 @@ time = np.linspace(0., length, y.shape[0])
 
 fig, (ax1, ax2, ax3) = plt.subplots(3)
 fig.suptitle('Correlation: ' + str(np.correlate(KNOWN_SIGNAL, y)))
-ax1.plot(time, KNOWN_SIGNAL)
-ax2.plot(time, INPUT_FILE)
-ax3.plot(time, y)
+ax1.plot(x, KNOWN_SIGNAL)
+ax2.plot(x, INPUT_FILE)
+ax3.plot(x, y)
 
 plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 
-wavfile.write("output.wav", 44100, y.astype(np.int16))
+wavfile.write("44100samples.wav", 44100, y.astype(np.int16))
+
+et = time.time()
+elapsed = et - st
+print("Elapsed time: " + str(elapsed) + " seconds")
 
 plt.show()
