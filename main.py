@@ -1,126 +1,113 @@
 from scipy.io import wavfile
-from scipy.fftpack import fft
+from scipy import fftpack
+from sklearn.preprocessing import minmax_scale
 import sound
 import filter
+import normalize
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-st = time.time()
-
 # Configuration
-INPUT_FILE = sound.LM2
-KNOWN_SIGNAL = sound.LS2
-KNOWN_NOISE = sound.LN2
-WEIGHT_RATE = 1
-LEARNING_RATE = 0.00000000008
-NTAP = 21
+INPUT_FILE = sound.LC3
+KNOWN_NOISE = sound.LN3
+LEARNING_RATE = 0.000000001
+NTAP = 1
 
-f = filter.Filter(np.zeros(NTAP))
-y = np.empty(len(INPUT_FILE))
-e = np.empty(len(INPUT_FILE))
+KNOWN_SIGNAL = sound.LS3
 
-count = 2
 
-for i in range(len(INPUT_FILE)):
-    if count == 2:
-        e[i] = f.filter(KNOWN_NOISE[i])
-        y[i] = INPUT_FILE[i] - e[i]
-        f.lms(y[i], LEARNING_RATE, WEIGHT_RATE)
-        count = 0
+def main(desired, noise, mu, ntaps):
+    st = time.time()
+    f = filter.Filter(np.zeros(ntaps), mu)
+    e = np.empty(len(desired))
+    n_hat = np.empty(len(desired))
 
-    count += 1
+    # shifting stuff
+    # A = fftpack.fft(desired)
+    # B = fftpack.fft(noise)
+    # Br = -B.conjugate()
+    # shifting = np.argmax(np.abs(fftpack.ifft(A * Br)))
+    # noise = np.roll(noise, shifting)
 
-print(f.coefficients[-1])
-print("=====================================")
+    # print(shifting)
+    print(desired)
+    print(noise)
 
-length = y.shape[0] / 44100
-x = np.linspace(0., length, y.shape[0])
+    # normalize stuff
+    # normalized_noise = (minmax_scale(noise) - 0.5) * 2
+    # normalized_desired = (minmax_scale(desired) - 0.5) * 2
+    #
+    # print(normalized_noise)
+    # print(normalized_desired)
+    #
+    # AMP = desired[0] / normalized_desired[0]
 
-n = np.size(x)
-fr = 22050 * np.linspace(0, 1, n // 2)
+    for i in range(len(INPUT_FILE)):
+        # n ---> filter ---> n_hat
+        n_hat[i] = f.filter(noise[i])  # get estimate noise as output
 
-# plot 1:
-plt.subplot(4, 2, 1)
-plt.title("Signal")
-plt.ylabel("Amplitude")
-plt.plot(x, sound.LS3)
+        # e = d - y
+        e[i] = desired[i] - n_hat[i]  # get error value, also serve as system output
 
-# plot 3:
-plt.subplot(4, 2, 3)
-plt.title("Noise")
-plt.ylabel("Amplitude")
-plt.plot(x, sound.LN3)
+        # adaptive algorithm
+        f.lms(e[i])
 
-# plot 5:
-plt.subplot(4, 2, 5)
-plt.title("Mixed")
-plt.ylabel("Amplitude")
-plt.plot(x, sound.LM3)
+    # print(e)
+    # e *= AMP
+    # print(e)
 
-# plot 7:
-plt.subplot(4, 2, 7)
-plt.title("Output")
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.plot(x, y)
+    et = time.time()
 
-# plot 2:
-X = fft(sound.LS3)
-X_mag = (2 / n) * np.abs(X[0:np.size(fr)])
+    length = e.shape[0] / 44100
+    t = np.linspace(0., length, e.shape[0])
 
-plt.subplot(4, 2, 2)
-plt.title("Signal")
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.plot(fr, X_mag)
+    # plt.figure(1)
+    # plt.title("Estimated Signal")
+    # plt.plot(INPUT_FILE, "r", alpha=0.3, label="Input", linewidth=0.3)
+    # plt.plot(e, "b", alpha=1, label="Output", linewidth=0.3)
+    # plt.tight_layout()
+    #
+    # plt.figure(2)
+    # plt.title("GOAL")
+    # plt.plot(INPUT_FILE, "r", alpha=0.3, label="Input", linewidth=0.3)
+    # plt.plot(KNOWN_SIGNAL, "b", alpha=1, label="Output", linewidth=0.3)
 
-# plot 4:
-X = fft(sound.LN3)
-X_mag = (2 / n) * np.abs(X[0:np.size(fr)])
+    fig, (ax0, ax1, ax2) = plt.subplots(nrows=3)
+    fig.set_size_inches(17.5, 9.5)
 
-plt.subplot(4, 2, 4)
-plt.title("Noise")
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.plot(fr, X_mag)
+    ax0.grid(True)
+    ax0.set_title("Corrupted Signal")
+    ax0.xaxis.set_label_text("Time (s)")
+    ax0.yaxis.set_label_text("Amplitude")
+    ax0.set_ylim(-20000, 20000)
+    ax0.plot(t, INPUT_FILE, "m", alpha=0.9, label="Input", linewidth=0.3)
 
-# plot 6:
-X = fft(sound.LM3)
-X_mag = (2 / n) * np.abs(X[0:np.size(fr)])
+    ax1.grid(True)
+    ax1.set_title("Estimated Signal")
+    ax1.xaxis.set_label_text("Time (s)")
+    ax1.yaxis.set_label_text("Amplitude")
+    ax1.set_ylim(-20000, 20000)
+    ax1.plot(t, INPUT_FILE, "m", alpha=0.3, label="Input", linewidth=0.3)
+    ax1.plot(t, e, "b", alpha=0.9, label="Output", linewidth=0.3)
 
-plt.subplot(4, 2, 6)
-plt.title("Mixed")
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.plot(fr, X_mag)
+    ax2.grid(True)
+    ax2.set_title("I don't know")
+    ax2.xaxis.set_label_text("Frequency (Hz)")
+    ax2.yaxis.set_label_text("Amplitude")
+    ax2.plot(np.abs(np.fft.rfft(INPUT_FILE)), "c", alpha=0.3, label="Input", linewidth=0.9)
 
-# plot 8:
-X = fft(y)
-X_mag = (2 / n) * np.abs(X[0:np.size(fr)])
+    wavfile.write("estimated_signal.wav", 44100, e.astype(np.int16))
+    # wavfile.write("estimated_noise.wav", 44100, np.invert(n.astype(np.int16)))
 
-plt.subplot(4, 2, 8)
-plt.title("Output")
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Magnitude")
-plt.plot(fr, X_mag)
+    elapsed = et - st
+    print("=====================================")
+    print("Correlation: ", np.corrcoef(e, KNOWN_SIGNAL)[0, 1])
+    print("Elapsed time: " + str(elapsed) + " seconds")
+    print("=====================================")
 
-plt.suptitle("Correlation: " + str(np.correlate(KNOWN_SIGNAL, y)))
+    fig.tight_layout()
+    plt.show()
 
-# fig, (ax1, ax2, ax3) = plt.subplots(3)
-# fig.suptitle('Correlation: ' + str(np.correlate(KNOWN_SIGNAL, y)))
-# ax1.plot(x, KNOWN_SIGNAL)
-# ax2.plot(x, INPUT_FILE)
-# ax3.plot(x, y)
-#
-# plt.xlabel("Time [s]")
-# plt.ylabel("Amplitude")
 
-wavfile.write("estimated_signal.wav", 44100, y.astype(np.int16))
-wavfile.write("estimated_noise.wav", 44100, np.invert(e.astype(np.int16)))
-
-et = time.time()
-elapsed = et - st
-print("Elapsed time: " + str(elapsed) + " seconds")
-
-plt.show()
+main(INPUT_FILE, KNOWN_NOISE, LEARNING_RATE, NTAP)
