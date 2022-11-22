@@ -20,7 +20,6 @@ class Filter:
             self.buffer[j] = self.buffer[j - 1]
 
     def nlms(self, error, beta=0.25):  # Update the coefficients of the filter
-        self.mu = 0.00001  # 0.00001
         for j in range(self.ntaps - 1, -1, -1):
             # Update coefficients
             # self.coefficients[j] = self.coefficients[j] + self.mu / (

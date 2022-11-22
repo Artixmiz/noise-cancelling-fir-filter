@@ -1,16 +1,27 @@
-import matplotlib.pyplot as plt
+from scipy import fftpack
+import sound
 import numpy as np
-from scipy.io import wavfile
 
-samplerate, data = wavfile.read("Sound/Mixed-3_1.wav")
-length = data.shape[0] / samplerate
-print(samplerate)
-print(len(data))
-print(len(data) / samplerate)
+a = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+b = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10, 1])
 
-time = np.linspace(0., length, data.shape[0])
-plt.plot(time, data, label="Left channel")
-plt.legend()
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.show()
+
+print(a)
+print(b)
+
+
+A = fftpack.fft(a)
+B = fftpack.fft(b)
+
+Ar = -A.conjugate()
+Br = -B.conjugate()
+
+# shifting = np.argmax(np.abs(fftpack.ifft(A * Br)))
+shifting = -3
+n = np.roll(b, shifting)
+
+# print(np.argmax(np.abs(fftpack.ifft(Ar * B))))
+# print(np.argmax(np.abs(fftpack.ifft(A * Br))))
+
+print(a)
+print(n)
