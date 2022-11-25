@@ -4,6 +4,10 @@ import filter
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import configparser
+
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 # Configuration
 INPUT_FILE = sound.LM2
@@ -20,6 +24,11 @@ def main(desired, noise, mu, ntaps):
     e = np.empty(len(desired))
     n_hat = np.empty(len(desired))
 
+    if config["DEFAULT"]["coefficient"] == "":
+        f.coefficients = np.zeros(ntaps)
+    else:
+        f.coefficients = np.array(config["DEFAULT"]["coefficient"])
+
     # Delay incase no known noise
 
     # noise = np.roll(desired, -6)
@@ -33,6 +42,11 @@ def main(desired, noise, mu, ntaps):
 
         # adaptive algorithm
         f.nlms(e[i])
+
+    with open("config.ini", "w") as configfile:
+        # update config
+        config["DEFAULT"]["coefficient"] = str(f.coefficients)
+        config.write(configfile)
 
     et = time.time()
 
@@ -73,6 +87,13 @@ def main(desired, noise, mu, ntaps):
     plt.plot(KNOWN_NOISE, "tab:blue", alpha=0.25, label="Input", linewidth=0.3)
     plt.plot(n_hat, "tab:orange", alpha=0.9, label="Input", linewidth=0.3)
     plt.tight_layout()
+
+    # plt.figure(3, figure=(8, 4.5))
+    # plt.grid(True)
+    # plt.title("Test")
+    # plt.xlabel("IDK")
+    # plt.ylabel("I also don't know")
+
 
     wavfile.write("estimated_signal.wav", 44100, e.astype(np.int16))
     wavfile.write("estimated_noise.wav", 44100, np.invert(n_hat.astype(np.int16)))
